@@ -4,8 +4,13 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    //https://www.youtube.com/watch?v=F20Sr5FlUlE
+    //https://www.youtube.com/watch?v=xCxSjgYTw9c
+
     [Header("Movement")]
-    public float moveSpeed;
+    private float moveSpeed;
+    public float walkSpeed;
+    public float RunSpeed;
 
     public float groundDrag;
 
@@ -14,8 +19,15 @@ public class PlayerMovement : MonoBehaviour
     public float airMultiplyer;
     [SerializeField] bool readyToJump;
 
+    [Header("Crouching")]
+    public float crouchSpeed;
+    public float crouchYScale;
+    private float startYScale;
+
     [Header("Keybinds")]
     public KeyCode jumpkey = KeyCode.Space;
+    public KeyCode sprintKey = KeyCode.LeftShift;
+    public KeyCode crouchKey = KeyCode.LeftControl;
 
     [Header("Grounded")]
     [SerializeField] float playerHeight;
@@ -31,19 +43,28 @@ public class PlayerMovement : MonoBehaviour
 
     Rigidbody rb;
 
+    public MovementState moveState;
+
+    public enum MovementState
+    {
+        walking, sprinting, air
+    }
+
     public void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         readyToJump = true;
+        startYScale = transform.localScale.y;
     }
 
     private void Update()
     {
-        grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
+       grounded = Physics.Raycast(transform.position, new Vector3(0f,-0.5f,0f), playerHeight * 0.5f + 0.2f, whatIsGround);
 
         MyInput();
         SpeedControl();
+        MoveStateHandler();
 
         if (grounded)
         {
@@ -63,16 +84,33 @@ public class PlayerMovement : MonoBehaviour
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
-        Debug.Log(readyToJump + " " + grounded);
 
         if (Input.GetKey(jumpkey) && readyToJump && grounded)
         {
-            Debug.LogError("Inside Jump Method");
             readyToJump = false;
 
             Jump();
 
             Invoke(nameof(ResetJump), jumpCooldown);
+        }
+
+
+    }
+
+    private void MoveStateHandler()
+    {
+        if (grounded && Input.GetKey(sprintKey))
+        {
+            moveState = MovementState.sprinting;
+            moveSpeed = RunSpeed;
+        }else if (grounded)
+        {
+            moveState = MovementState.walking;
+            moveSpeed = walkSpeed;
+        }
+        else
+        {
+            moveState = MovementState.air;
         }
     }
 
