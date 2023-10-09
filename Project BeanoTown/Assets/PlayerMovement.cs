@@ -34,6 +34,8 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask whatIsGround;
     [SerializeField] bool grounded;
 
+    [Header("Slope)]
+
     public Transform orientation;
 
     float horizontalInput;
@@ -47,7 +49,7 @@ public class PlayerMovement : MonoBehaviour
 
     public enum MovementState
     {
-        walking, sprinting, air
+        walking, sprinting, air, crouching
     }
 
     public void Start()
@@ -80,6 +82,7 @@ public class PlayerMovement : MonoBehaviour
     {
         MovePlayer();
     }
+
     public void MyInput()
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
@@ -94,24 +97,47 @@ public class PlayerMovement : MonoBehaviour
             Invoke(nameof(ResetJump), jumpCooldown);
         }
 
+        if (Input.GetKeyDown(crouchKey))
+        {
+            transform.localScale = new Vector3(transform.localScale.x, crouchYScale, transform.localScale.z);
+            rb.AddForce(Vector3.down * 5f, ForceMode.Impulse);
+        }
+
+        if (Input.GetKeyUp(crouchKey))
+        {
+            transform.localScale = new Vector3(transform.localScale.x, startYScale, transform.localScale.z);
+        }
+
 
     }
 
     private void MoveStateHandler()
     {
-        if (grounded && Input.GetKey(sprintKey))
+        if ( grounded && Input.GetKeyDown(crouchKey))
+        {
+            moveState = MovementState.crouching;
+            moveSpeed = crouchSpeed;
+            Debug.Log(moveState + "Crouching");
+        }
+        //Walk
+        else if (grounded && Input.GetKey(sprintKey))
         {
             moveState = MovementState.sprinting;
             moveSpeed = RunSpeed;
-        }else if (grounded)
+        }
+        //Run
+        else if (grounded && !Input.GetKey(crouchKey))
         {
             moveState = MovementState.walking;
             moveSpeed = walkSpeed;
         }
+        //Air 
         else
         {
             moveState = MovementState.air;
         }
+
+        Debug.Log(moveState + "After");
     }
 
     private void MovePlayer()
